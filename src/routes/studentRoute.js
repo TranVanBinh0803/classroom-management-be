@@ -4,6 +4,8 @@ const router = express.Router();
 
 router.get("/myLessons", studentController.getMyLessons);
 router.post("/markLessonDone", studentController.markLessonDone);
+router.post("/setupAccount", studentController.setupAccount);
+
 // router.put("/editProfile", studentController.editProfile);
 
 

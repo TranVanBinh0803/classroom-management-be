@@ -2,13 +2,15 @@ import { StatusCodes } from "http-status-codes";
 import "dotenv/config";
 import { generateOtp } from "~/utils/generateOTP";
 import { ApiError, ApiResponse } from "~/utils/types";
-import axios from "axios";
 import { db } from "~/config/firebase";
 import { v4 as uuidv4 } from "uuid";
 import { generateToken } from "~/utils/generateToken";
 import { normalizePhoneNumber } from "~/utils/helpers";
+import bcrypt from "bcryptjs";
+
 
 const instructorsRef = db.ref("instructors");
+const studentsRef = db.ref("students");
 
 const instructorRegister = async (req, res, next) => {
   try {
@@ -144,6 +146,7 @@ const validateAccessCode = async (req, res, next) => {
       instructorData = {
         id,
         phone: normalizePhoneNumber(phone),
+        role: "instructor",
         email: "",
         avatar: "",
       };
@@ -174,6 +177,43 @@ const validateAccessCode = async (req, res, next) => {
   }
 };
 
+const studentLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Missing email or password");
+    }
+
+    const snapshot = await studentsRef.once("value");
+    const studentsData = snapshot.val();
+    const student = Object.values(studentsData).find((s) => s.email === email);
+
+    if (!student) {
+      throw new ApiError(StatusCodes.NOT_FOUND, "Student not found");
+    }
+    if (!student.password) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Account not set up yet");
+    }
+    const isPasswordCorrect = await bcrypt.compare(password, student.password);
+    if (!isPasswordCorrect) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, "Invalid credentials");
+    }
+    const { token: accessToken, expiresInSecs } = generateToken(student.id);
+
+    const returnData = {
+      accessToken,
+      expiresInSecs,
+      user: student,
+    };
+
+    res
+      .status(StatusCodes.OK)
+      .json(new ApiResponse(StatusCodes.OK, "Login successfully", returnData));
+  } catch (error) {
+    next(error);
+  }
+};
+
 const logout = async (req, res, next) => {
   try {
     res
@@ -188,5 +228,6 @@ export const authController = {
   instructorRegister,
   createAccessCode,
   validateAccessCode,
+  studentLogin,
   logout,
 };

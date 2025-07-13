@@ -1,6 +1,8 @@
 import { StatusCodes } from "http-status-codes";
 import { db } from "~/config/firebase";
 import { ApiError, ApiResponse } from "~/utils/types";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 const studentsRef = db.ref("students");
 
@@ -37,7 +39,10 @@ const markLessonDone = async (req, res, next) => {
     const { studentId, lessonId } = req.body;
 
     if (!studentId || !lessonId) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, "Missing studentId or lessonId");
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        "Missing studentId or lessonId"
+      );
     }
 
     const lessonRef = studentsRef.child(`${studentId}/lessons/${lessonId}`);
@@ -57,4 +62,40 @@ const markLessonDone = async (req, res, next) => {
   }
 };
 
-export const studentController = { getMyLessons, markLessonDone };
+const setupAccount = async (req, res, next) => {
+  try {
+    const { token, name, password } = req.body;
+
+    if (!token || !name || !password) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        "Missing token, name, or password"
+      );
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const studentId = decoded.userId;
+
+    const studentRef = studentsRef.child(studentId);
+    const snapshot = await studentRef.once("value");
+
+    if (!snapshot.exists()) {
+      throw new ApiError(StatusCodes.NOT_FOUND, "Student not found");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await studentRef.update({
+      name,
+      password: hashedPassword,
+    });
+
+    return res
+      .status(StatusCodes.OK)
+      .json(new ApiResponse(StatusCodes.OK, "Account setup successfully"));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const studentController = { getMyLessons, markLessonDone, setupAccount };

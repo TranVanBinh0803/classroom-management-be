@@ -5,6 +5,7 @@ const router = express.Router();
 router.post("/instructorRegister", authController.instructorRegister);
 router.post("/createAccessCode", authController.createAccessCode);
 router.post("/validateAccessCode", authController.validateAccessCode);
+router.post("/studentLogin", authController.studentLogin);
 router.get("/logout", authController.logout);
 
 

@@ -2,6 +2,8 @@ import { StatusCodes } from "http-status-codes";
 import { db } from "~/config/firebase";
 import { ApiError, ApiResponse } from "~/utils/types";
 import { v4 as uuidv4 } from "uuid";
+import { generateToken } from "~/utils/generateToken";
+import { sendVerificationEmail } from "~/utils/emailUntils";
 
 const studentsRef = db.ref("students");
 
@@ -34,17 +36,21 @@ const addStudent = async (req, res, next) => {
       phone,
       email,
       address,
+      role: "student",
       avatar: "",
     };
 
     await studentsRef.child(id).set(studentData);
+
+    const token = generateToken(id);
+    await sendVerificationEmail(email, token);
 
     res
       .status(StatusCodes.CREATED)
       .json(
         new ApiResponse(
           StatusCodes.CREATED,
-          "Student created successfully",
+          "Student created and email sent",
           studentData
         )
       );
