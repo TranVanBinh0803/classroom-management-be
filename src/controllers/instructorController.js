@@ -6,6 +6,7 @@ import { generateToken } from "~/utils/generateToken";
 import { sendVerificationEmail } from "~/utils/emailUntils";
 
 const studentsRef = db.ref("students");
+const lessonsRef = db.ref("lessons");
 
 const addStudent = async (req, res, next) => {
   try {
@@ -61,25 +62,23 @@ const addStudent = async (req, res, next) => {
 
 const assignLesson = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { title, description } = req.body;
+    const { studentId, lessonId, title, description } = req.body;
 
-    if (!id || !title || !description) {
+    if (!studentId || !lessonId || !title || !description) {
       throw new ApiError(StatusCodes.BAD_REQUEST, "Missing required fields");
     }
 
-    const studentRef = studentsRef.child(id);
+    const studentRef = studentsRef.child(studentId);
     const snapshot = await studentRef.once("value");
 
     if (!snapshot.exists()) {
       throw new ApiError(StatusCodes.NOT_FOUND, "Student not found");
     }
 
-    const lessonId = uuidv4();
-    const lessonRef = studentRef.child("lessons").child(lessonId); 
+    const lessonRef = studentRef.child("lessons").child(lessonId);
 
     await lessonRef.set({
-      id: lessonId, 
+      id: lessonId,
       title,
       description,
       isCompleted: false,
@@ -176,6 +175,46 @@ const deleteStudent = async (req, res, next) => {
   }
 };
 
+const addLesson = async (req, res, next) => {
+  try {
+    const { title, description } = req.body;
+
+    if (!title || !description) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Missing required fields");
+    }
+
+    const id = uuidv4();
+    const lessonData = {
+      id,
+      title,
+      description,
+    };
+    await lessonsRef.child(id).set(lessonData);
+
+    res
+      .status(StatusCodes.CREATED)
+      .json(
+        new ApiResponse(
+          StatusCodes.CREATED,
+          "Student created successfully",
+          lessonData
+        )
+      );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getLessons = async (req, res, next) => {
+  try {
+    const snapshot = await lessonsRef.once("value");
+    const lessons = snapshot.val() || {};
+    res.json(lessons);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const instructorController = {
   addStudent,
   assignLesson,
@@ -183,4 +222,7 @@ export const instructorController = {
   getStudentByPhone,
   updateStudent,
   deleteStudent,
+
+  addLesson,
+  getLessons,
 };
