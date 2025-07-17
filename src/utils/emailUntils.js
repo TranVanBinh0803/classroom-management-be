@@ -11,6 +11,7 @@ const transporter = nodemailer.createTransport({
 export const sendVerificationEmail = async (email, token) => {
     console.log("token:", token);
   const url = `${process.env.FE_HOST}/setup-account?token=${token.token}`;
+  console.log("url:", url);
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,

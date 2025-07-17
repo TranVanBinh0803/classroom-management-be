@@ -46,13 +46,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("sendMessage", ({ conversationId, senderId, text }) => {
-  socket.to(conversationId).emit("receiveMessage", {
-    senderId,
-    text,
-    conversationId,
+    console.log("client send message");
+    socket.to(conversationId).emit("receiveMessage", {
+      senderId,
+      text,
+      conversationId,
+    });
+    const room = io.sockets.adapter.rooms.get(conversationId);
+     console.log(`Room ${conversationId} has ${room.size} member(s)`);
   });
-  const room = io.sockets.adapter.rooms.get(conversationId);
-});
 
   socket.on("leave", (conversationId) => {
     socket.leave(conversationId);
