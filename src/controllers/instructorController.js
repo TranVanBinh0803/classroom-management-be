@@ -19,14 +19,14 @@ const addStudent = async (req, res, next) => {
     const snapshot = await studentsRef.once("value");
     const studentsData = snapshot.val();
 
-    const isPhoneExists =
+    const isEmailExists =
       studentsData &&
-      Object.values(studentsData).some((student) => student.phone === phone);
+      Object.values(studentsData).some((student) => student.email === email);
 
-    if (isPhoneExists) {
+    if (isEmailExists) {
       throw new ApiError(
         StatusCodes.CONFLICT,
-        "Student with this phone already exists"
+        "Student with this email already exists"
       );
     }
 

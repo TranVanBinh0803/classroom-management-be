@@ -8,7 +8,6 @@ import { generateToken } from "~/utils/generateToken";
 import { normalizePhoneNumber } from "~/utils/helpers";
 import bcrypt from "bcryptjs";
 
-
 const instructorsRef = db.ref("instructors");
 const studentsRef = db.ref("students");
 
@@ -153,7 +152,10 @@ const validateAccessCode = async (req, res, next) => {
       await instructorsRef.child(id).set(instructorData);
     }
 
-    const { token: accessToken, expiresInSecs } = generateToken(id);
+    const { token: accessToken, expiresInSecs } = generateToken(
+      id,
+      "instructor"
+    );
 
     const returnData = {
       accessToken,
@@ -198,7 +200,7 @@ const studentLogin = async (req, res, next) => {
     if (!isPasswordCorrect) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, "Invalid credentials");
     }
-    const { token: accessToken, expiresInSecs } = generateToken(student.id);
+    const { token: accessToken, expiresInSecs } = generateToken(student.id, 'student');
 
     const returnData = {
       accessToken,
